@@ -12,5 +12,8 @@ The model is composed of 3 stages:
 - Stage3: in case of a low cosine similarity score, the Decoder part of the generative model is used, and a response in generated word by word using BeamSearch.
 
 # Architecture Diagram   
-![image](https://user-images.githubusercontent.com/37878793/158272081-cfe36b9a-55cc-4fb7-a775-d5032597984c.png)
+![image](https://user-images.githubusercontent.com/37878793/158273168-b9791a22-1004-49f5-9b09-1f44a9e1dfc3.png)
+
+# Implementation
+- The project is implemented using Tensorflow and Python.
 
