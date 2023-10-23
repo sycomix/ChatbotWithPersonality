@@ -67,16 +67,14 @@ class Retrieval_ChatBot(object):
     def train(self, sess, questions, questions_len, answers, answers_len, negatives, negatives_len):
         # Feed the last hidden state of each type of sentences
         # And get minimize the loss function
-        input_feed = {}
-        input_feed[self.encoder.questions_inputs.name] = questions
-        input_feed[self.encoder.questions_inputs_len.name] = questions_len
-
-        input_feed[self.encoder.answers_inputs.name] = answers
-        input_feed[self.encoder.answers_inputs_len.name] = answers_len
-
-        input_feed[self.encoder.negatives_inputs.name] = negatives
-        input_feed[self.encoder.negatives_inputs_len.name] = negatives_len
-
+        input_feed = {
+            self.encoder.questions_inputs.name: questions,
+            self.encoder.questions_inputs_len.name: questions_len,
+            self.encoder.answers_inputs.name: answers,
+            self.encoder.answers_inputs_len.name: answers_len,
+            self.encoder.negatives_inputs.name: negatives,
+            self.encoder.negatives_inputs_len.name: negatives_len,
+        }
         output_feed = [self.gradient_updates, self.positive_sim, self.negative_sim, self.triplet_loss,
                        self.questions_encoding, self.answers_encoding]
 
@@ -88,10 +86,10 @@ class Retrieval_ChatBot(object):
 
     # Prediction section --------------------------------------------------------------------
     def get_retrieval_answers_encoding(self, sess, answers, answers_len):
-        input_feed = {}
-        input_feed[self.encoder.answers_inputs.name] = answers
-        input_feed[self.encoder.answers_inputs_len.name] = answers_len
-
+        input_feed = {
+            self.encoder.answers_inputs.name: answers,
+            self.encoder.answers_inputs_len.name: answers_len,
+        }
         output_feed = [self.encoder.answers_outputs, self.encoder.answers_state]
         self.retrieval_answers_encoding = sess.run(output_feed, input_feed)[1][-1].h
         print(self.retrieval_answers_encoding)
@@ -106,10 +104,10 @@ class Retrieval_ChatBot(object):
         return np.division(num, denom)
 
     def predict(self, sess, questions, questions_len):
-        input_feed = {}
-        input_feed[self.encoder.questions_inputs.name] = questions
-        input_feed[self.encoder.questions_inputs_len.name] = questions_len
-
+        input_feed = {
+            self.encoder.questions_inputs.name: questions,
+            self.encoder.questions_inputs_len.name: questions_len,
+        }
         output_feed = [self.encoder.questions_outputs, self.encoder.questions_state]
         questions_encoding = sess.run(output_feed, input_feed)[1][-1].h
 
@@ -130,9 +128,9 @@ class Retrieval_ChatBot(object):
     def save(self, sess, path, var_list=None, global_step=None):
         saver = tf.train.Saver(var_list)
         save_path = saver.save(sess, save_path=path, global_step=global_step)
-        print('model saved at %s' % save_path)
+        print(f'model saved at {save_path}')
 
     def restore(self, sess, path, var_list=None):
         saver = tf.train.Saver(var_list)
         saver.restore(sess, save_path=path)
-        print('model restored from %s' % path)
+        print(f'model restored from {path}')

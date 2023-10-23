@@ -153,7 +153,7 @@ class Decoder(object):
                                                                 name='attention_wrapper')
 
         # Convert the last state of the encoder to a beamsearch + attention state of the decoder
-        decoder_initial_state = [state for state in tiled_encoder_final_state]
+        decoder_initial_state = list(tiled_encoder_final_state)
 
         attention_batch_size = self.inputs_batch_size
         if self.model_type != "train_model":

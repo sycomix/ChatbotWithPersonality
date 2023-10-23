@@ -93,13 +93,10 @@ class CorpusProcessor(object):
 
     def save_clean_corpus(self, questions, answers, path):
         train_data_filepath = os.path.join(path, 'cornell_train_data.txt')
-        train_data = open(train_data_filepath, 'w', encoding='utf8')
-
-        for i in range(len(questions)):
-            train_data.write(questions[i])
-            train_data.write(answers[i])
-
-        train_data.close()
+        with open(train_data_filepath, 'w', encoding='utf8') as train_data:
+            for i in range(len(questions)):
+                train_data.write(questions[i])
+                train_data.write(answers[i])
 
 
     def compute_clean_corpus(self, path):
@@ -120,15 +117,12 @@ class CorpusProcessor(object):
 
         for file_name in file_names:
             file_path = os.path.join(path, file_name)
-            file = open(file_path, 'r', encoding='utf8')
-
-            for index, line in enumerate(file):
-                if index % 2 == 0:
-                    questions.append(line)
-                else:
-                    answers.append(line)
-
-            file.close()
+            with open(file_path, 'r', encoding='utf8') as file:
+                for index, line in enumerate(file):
+                    if index % 2 == 0:
+                        questions.append(line)
+                    else:
+                        answers.append(line)
 
         self.questions = questions
         self.answers = answers
@@ -149,8 +143,8 @@ class CorpusProcessor(object):
             a_words = self.answers[index].split()
 
             if len(q_words) > 0 and len(a_words) > 0:
-                word_questions.append([w for w in q_words])
-                word_answers.append([w for w in a_words])
+                word_questions.append(list(q_words))
+                word_answers.append(list(a_words))
 
                 for w in q_words:
                     if w not in vocabulary:
@@ -170,16 +164,10 @@ class CorpusProcessor(object):
         self.sorted_vocabulary = sorted(vocabulary.items(), key=operator.itemgetter(1), reverse=True)
 
     def filter_unk_sentences(self, sentence, sentence_max_len):
-        num_unk_tokens = 0
-        for token in sentence:
-            if token == UNK_TOKEN:
-                num_unk_tokens += 1
-
+        num_unk_tokens = sum(1 for token in sentence if token == UNK_TOKEN)
         sentence_len = min(len(sentence), sentence_max_len)
 
-        if 100.0*num_unk_tokens/sentence_len > 20:
-            return False
-        return True
+        return 100.0*num_unk_tokens/sentence_len <= 20
 
 
     def get_index_sentences(self, embedding_manager, sentence_max_len):
@@ -209,10 +197,7 @@ class CorpusProcessor(object):
             left = len(self.word_questions) - batch_size
 
         def truncate(sentence):
-            if max_len and len(sentence) > max_len:
-                return sentence[:max_len]
-            else:
-                return sentence
+            return sentence[:max_len] if max_len and len(sentence) > max_len else sentence
 
         questions = [truncate(self.word_questions[i]) for i in range(left, left + batch_size)]
         questions_len = [len(question) for question in questions]
@@ -268,49 +253,50 @@ class CorpusProcessor(object):
                                ]
 
         file_path = os.path.join(path, file_name)
-        file = open(file_path, 'r', encoding='utf8')
+        with open(file_path, 'r', encoding='utf8') as file:
+            data_file_path = os.path.join(path, data_file_name)
+            datafile = open(data_file_path, 'w', encoding='utf8')
 
-        data_file_path = os.path.join(path, data_file_name)
-        datafile = open(data_file_path, 'w', encoding='utf8')
+            for index, line in enumerate(file):
+                sentences = sent_tokenize(line)
 
-        for index, line in enumerate(file):
-            sentences = sent_tokenize(line)
+                for index in range(len(sentences)):
+                    sentences[index] = re.sub("\[\d+\]", "", sentences[index])
 
-            for index in range(len(sentences)):
-                sentences[index] = re.sub("\[\d+\]", "", sentences[index])
+                    for key in impersonal2personal:
+                        sentences[index] = re.sub(r"\b%s\b" % key[0], key[1], sentences[index])
 
-                for key in impersonal2personal:
-                    sentences[index] = re.sub(r"\b%s\b" % key[0], key[1], sentences[index])
+                    if len(sentences[index]) > 5:
+                        datafile.write(sentences[index])
+                        datafile.write('\n')
 
-                if len(sentences[index]) > 5:
-                    datafile.write(sentences[index])
-                    datafile.write('\n')
-
-        file.close()
         datafile.close()
 
     def get_personal_answers(self, path, file_name, embedding_manager):
         file_path = os.path.join(path, file_name)
         file = open(file_path, 'r', encoding='utf8')
 
-        personal_answers = []
-        for index, line in enumerate(file):
-            personal_answers.append(line)
-
+        personal_answers = list(file)
         self.personal_answers = personal_answers
 
         word_personal_answers = []
         remove_punctuation = str.maketrans('', '', string.punctuation)
         remove_digits = str.maketrans('', '', string.digits)
-        for index in range(len(self.personal_answers)):
-            formatted = self.personal_answers[index].lower().translate(remove_digits).translate(remove_punctuation)
+        for personal_answer in self.personal_answers:
+            formatted = (
+                personal_answer.lower()
+                .translate(remove_digits)
+                .translate(remove_punctuation)
+            )
             personal_words = formatted.split()
 
-            word_personal_answers.append([w for w in personal_words])
+            word_personal_answers.append(list(personal_words))
 
         self.word_personal_answers = []
-        for index in range(len(word_personal_answers)):
-            converted_sentence = embedding_manager.sentence_to_word_indexes(word_personal_answers[index])
+        for word_personal_answer in word_personal_answers:
+            converted_sentence = embedding_manager.sentence_to_word_indexes(
+                word_personal_answer
+            )
 
             if len(converted_sentence) > 0:
                 self.word_personal_answers.append(converted_sentence)
@@ -322,10 +308,7 @@ class CorpusProcessor(object):
             left = len(self.word_questions) - batch_size
 
         def truncate(sentence):
-            if len(sentence) > max_len:
-                return sentence[:max_len]
-            else:
-                return sentence
+            return sentence[:max_len] if len(sentence) > max_len else sentence
 
         negative_answers = []
         for i in range(batch_size):
@@ -371,10 +354,7 @@ class CorpusProcessor(object):
         question_indexes = embedding_manager.sentence_to_word_indexes(question_words)
 
         def truncate(sentence):
-            if max_len and len(sentence) > max_len:
-                return sentence[:max_len]
-            else:
-                return sentence
+            return sentence[:max_len] if max_len and len(sentence) > max_len else sentence
 
         questions = [truncate(question_indexes)]
         questions_len = [len(question) for question in questions]

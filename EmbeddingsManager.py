@@ -25,10 +25,8 @@ class EmbeddingsManager(object):
     def load_embeddings(self):
         word2index = {_SOS: SOS_TOKEN, _EOS: EOS_TOKEN, _UNK: UNK_TOKEN}
         index2word = {SOS_TOKEN: _SOS, EOS_TOKEN: _EOS, UNK_TOKEN: _UNK}
-        weights = []
+        weights = [np.random.randn(self.embedding_size)]
 
-        # SOS, EOS, UNK
-        weights.append(np.random.randn(self.embedding_size))
         weights.append(np.random.randn(self.embedding_size))
         weights.append(np.random.randn(self.embedding_size))
 

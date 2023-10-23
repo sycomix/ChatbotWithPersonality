@@ -240,8 +240,8 @@ def seq2seq_predict(session, model, corpus_processor, embedding_manager, params,
             BLEU_answers.append(deepcopy(generated_answer))
 
         generated_string = ""
-        for j in range(len(generated_answer)):
-            generated_string = generated_string + generated_answer[j] + " "
+        for item in generated_answer:
+            generated_string = generated_string + item + " "
 
         #generated_string = deepcopy(generated_string[0].upper()) + deepcopy(generated_string[1:]) + "."
         print(generated_string)
